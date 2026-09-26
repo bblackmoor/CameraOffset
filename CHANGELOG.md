@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4
+
+- Remember pre-activation camera values separately for each character.
+
 ## 1.0.3
 
 - Add account-wide profiles with per-character selection and a Profiles settings tab.

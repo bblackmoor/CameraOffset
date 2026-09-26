@@ -70,7 +70,12 @@ local function LoadDB()
         profileKeys = {}, fallbackProfile = DEFAULT_NAME,
     }
     if type(saved) == "table" and saved.schemaVersion == 2 then
-        if type(saved.originals) == "table" then db.originals = saved.originals end
+        db.originalsByCharacter = type(saved.originalsByCharacter) == "table"
+            and saved.originalsByCharacter or {}
+        if type(saved.originals) == "table" then
+            db.originalsByCharacter[CharacterKey()] = saved.originals
+        end
+        if type(saved.legacyDefaults) == "table" then db.legacyDefaults = saved.legacyDefaults end
         if type(saved.profiles) == "table" then
             for name, profile in pairs(saved.profiles) do
                 if type(name) == "string" and name ~= "" and #name <= 64 then
@@ -92,12 +97,14 @@ local function LoadDB()
         })
         db.profileKeys[CharacterKey()] = "Previous Camera Offset"
         db.fallbackProfile = "Previous Camera Offset"
-        db.originals = {
+        db.legacyDefaults = {
             keepCentered = GameDefault("CameraKeepCharacterCentered", "0"),
             reduceMovement = GameDefault("CameraReduceUnexpectedMovement", "0"),
             offset = GameDefault("test_cameraOverShoulder", "0"),
         }
+        db.originalsByCharacter = { [CharacterKey()] = CopyProfile(db.legacyDefaults) }
     end
+    db.originalsByCharacter = db.originalsByCharacter or {}
     CameraOffsetDB = db
 end
 
@@ -108,11 +115,13 @@ local CVARS = {
 }
 
 local function RestoreCamera()
-    if not db.originals then return end
+    local key = CharacterKey()
+    local originals = db.originalsByCharacter[key]
+    if not originals then return end
     for key, cvar in pairs(CVARS) do
-        if db.originals[key] then C_CVar.SetCVar(cvar, db.originals[key]) end
+        if originals[key] then C_CVar.SetCVar(cvar, originals[key]) end
     end
-    db.originals = nil
+    db.originalsByCharacter[key] = nil
 end
 
 local function ApplyProfile()
@@ -121,9 +130,13 @@ local function ApplyProfile()
         RestoreCamera()
         return
     end
-    if not db.originals then
-        db.originals = {}
-        for key, cvar in pairs(CVARS) do db.originals[key] = C_CVar.GetCVar(cvar) end
+    local character = CharacterKey()
+    if not db.originalsByCharacter[character] then
+        local originals = {}
+        for key, cvar in pairs(CVARS) do
+            originals[key] = db.legacyDefaults and db.legacyDefaults[key] or C_CVar.GetCVar(cvar)
+        end
+        db.originalsByCharacter[character] = originals
     end
     C_CVar.SetCVar("CameraKeepCharacterCentered", profile.keepCentered)
     C_CVar.SetCVar("CameraReduceUnexpectedMovement", profile.reduceMovement)
