@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.9
+
+- Match the requested settings switch layout: label on the left, rectangular track on the right, and a thumb that moves right for On.
+
 ## 1.0.8
 
 - Use on/off switches for the enable control and both WoW camera settings.

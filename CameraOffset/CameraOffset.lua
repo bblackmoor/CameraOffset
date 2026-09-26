@@ -156,35 +156,31 @@ end
 
 local function AddSwitch(parent, label, y, onChanged)
     local switch = CreateFrame("Button", nil, parent)
-    switch:SetSize(56, 26)
-    switch:SetPoint("TOPLEFT", 20, y)
-    switch:SetHitRectInsets(0, -440, 0, 0)
+    switch:SetSize(44, 20)
+    switch:SetPoint("TOPLEFT", 465, y - 3)
+    switch:SetHitRectInsets(-445, 0, -3, -3)
 
     local track = switch:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints()
-    track:SetTexture("Interface\\AddOns\\CameraOffset\\SwitchTrack.tga")
+    track:SetColorTexture(0.25, 0.25, 0.26, 1)
     local thumb = switch:CreateTexture(nil, "ARTWORK")
-    thumb:SetSize(20, 20)
-    thumb:SetTexture("Interface\\AddOns\\CameraOffset\\SwitchThumb.tga")
-    local state = switch:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    thumb:SetSize(18, 16)
+    thumb:SetColorTexture(0.72, 0.72, 0.73, 1)
     local caption = switch:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    caption:SetPoint("LEFT", switch, "RIGHT", 12, 0)
+    caption:SetPoint("RIGHT", switch, "LEFT", -12, 0)
+    caption:SetWidth(433)
+    caption:SetJustifyH("LEFT")
     caption:SetText(label)
 
     function switch:SetChecked(checked)
         self.checked = checked == true
         thumb:ClearAllPoints()
-        state:ClearAllPoints()
         if self.checked then
-            track:SetVertexColor(0.13, 0.55, 0.33)
-            thumb:SetPoint("RIGHT", self, "RIGHT", -3, 0)
-            state:SetPoint("LEFT", self, "LEFT", 6, 0)
-            state:SetText("On")
+            track:SetColorTexture(0.19, 0.42, 0.31, 1)
+            thumb:SetPoint("RIGHT", self, "RIGHT", -2, 0)
         else
-            track:SetVertexColor(0.28, 0.28, 0.30)
-            thumb:SetPoint("LEFT", self, "LEFT", 3, 0)
-            state:SetPoint("RIGHT", self, "RIGHT", -5, 0)
-            state:SetText("Off")
+            track:SetColorTexture(0.25, 0.25, 0.26, 1)
+            thumb:SetPoint("LEFT", self, "LEFT", 2, 0)
         end
     end
     function switch:GetChecked() return self.checked end
