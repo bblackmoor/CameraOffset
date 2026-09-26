@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.11
+
+- Use one enable switch; automatically set the two supporting WoW camera CVars and restore their previous values on disable.
+- Remove the two supporting camera options from profiles and explain the behavior in an info popup.
+- Add a Reset camera defaults button that disables the selected profile and resets all three affected camera CVars to WoW defaults.
+
 ## 1.0.10
 
 - Save each monitor width on Enter or when its field loses focus, with visible confirmation.

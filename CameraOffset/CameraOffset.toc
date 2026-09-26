@@ -2,7 +2,7 @@
 ## Title: Camera Offset
 ## Notes: Aligns your character on a wide game window and saves a camera offset.
 ## Author: Brandon Blackmoor <bblackmoor@blackgate.net>
-## Version: 1.0.10
+## Version: 1.0.11
 ## SavedVariables: CameraOffsetDB
 ## X-License: GPL-3.0
 ## X-Website: https://github.com/bblackmoor/CameraOffset
