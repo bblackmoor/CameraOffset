@@ -1,0 +1,48 @@
+#!/bin/sh
+
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+toc="$repo_root/CameraOffset/CameraOffset.toc"
+dist="$repo_root/dist"
+
+if [ ! -f "$toc" ]; then
+    echo "Error: $toc not found."
+    exit 1
+fi
+
+if ! grep -q '^## Version:' "$toc"; then
+    echo "Error: No version entry found in $toc."
+    exit 1
+fi
+
+commit_count=$(git rev-list --count HEAD 2>/dev/null || printf '0')
+build=$((commit_count + 1))
+version="1.0.$build"
+
+sed -i "s/^## Version:.*/## Version: $version/" "$toc"
+
+git add "$toc"
+
+mkdir -p "$dist"
+archive="$dist/CameraOffset-$version.zip"
+rm -f "$archive"
+
+if command -v powershell.exe >/dev/null 2>&1; then
+    repo_win=$(cd "$repo_root" && pwd -W)
+    powershell.exe -NoProfile -Command "& { Compress-Archive -Path '$repo_win\\CameraOffset' -DestinationPath '$repo_win\\dist\\CameraOffset-$version.zip' -Force }"
+elif command -v powershell >/dev/null 2>&1; then
+    powershell -NoProfile -Command "& { Compress-Archive -Path '$repo_root/CameraOffset' -DestinationPath '$archive' -Force }"
+elif command -v zip >/dev/null 2>&1; then
+    (
+        cd "$repo_root"
+        zip -qr "$archive" CameraOffset
+    )
+else
+    echo "Warning: neither PowerShell nor zip is available; release ZIP was not created."
+fi
+
+echo "Updated addon version to $version"
+if [ -f "$archive" ]; then
+    echo "Created dist/CameraOffset-$version.zip"
+fi
