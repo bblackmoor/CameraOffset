@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.18
+
+- Reapply an enabled profile shortly after entering the world so WoW's startup camera initialization does not override the saved offset.
+
 ## 1.0.17
 
 - Remove the monitor width inputs, estimate button, and related text from Camera settings; move the shoulder offset control up.

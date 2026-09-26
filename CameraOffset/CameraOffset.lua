@@ -530,4 +530,15 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:SetScript("OnEvent", Initialize)
+events:RegisterEvent("PLAYER_ENTERING_WORLD")
+events:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_LOGIN" then
+        Initialize()
+    else
+        -- WoW may restore its camera CVars after PLAYER_LOGIN. Reapply the
+        -- current profile once camera initialization has finished.
+        C_Timer.After(2, function()
+            if db and Profile().enabled then ApplyProfile() end
+        end)
+    end
+end)
