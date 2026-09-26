@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7
+
+- Open the addon settings on an About page with version, author, category, license, source link, and slash-command reference.
+- Move camera controls into a Camera tab and add slash commands for the Camera, Profiles, and About pages.
+
 ## 1.0.4
 
 - Remember pre-activation camera values separately for each character.

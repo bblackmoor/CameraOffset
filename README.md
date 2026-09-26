@@ -10,7 +10,7 @@ When the selected profile is enabled, it applies:
 /console test_cameraOverShoulder <your saved offset>
 ```
 
-Open **Options → AddOns → Camera Offset** or type `/cameraoffset`. The built-in **Default** profile uses WoW's camera defaults and starts disabled. A fresh install does not change the camera. Enable Camera Offset to apply a profile immediately and at subsequent logins. Turn it off to restore the camera values saved before activation, without reloading the UI.
+Open **Options → AddOns → Camera Offset** or type `/cameraoffset` to see the About page, with version, source, and command information. Use the **Camera** tab (or `/cameraoffset camera`) for the controls and the **Profiles** tab (or `/cameraoffset profiles`) for profiles. `/cameraoffset about` also opens About. The built-in **Default** profile uses WoW's camera defaults and starts disabled. A fresh install does not change the camera. Enable Camera Offset to apply a profile immediately and at subsequent logins. Turn it off to restore the camera values saved before activation, without reloading the UI.
 
 The **Profiles** tab lets you select, create, copy, rename, and delete profiles. Profiles hold the enable toggle, the three camera values, and both monitor widths. They are shared account-wide, with each character remembering its selection. Default can be edited or restored to WoW's defaults, but cannot be renamed or deleted. Existing installations get a selected **Previous Camera Offset** profile containing their earlier settings; disabling it restores WoW's default values because the earlier version did not record the original camera values.
 

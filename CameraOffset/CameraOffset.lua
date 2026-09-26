@@ -1,6 +1,8 @@
+local addonName = ...
 local DEFAULT_NAME = "Default"
+local SOURCE_URL = "https://github.com/bblackmoor/CameraOffset"
 local MIN_OFFSET, MAX_OFFSET = -20, 20
-local db, cameraPanel, cameraHost, profilesPanel, category
+local db, cameraPanel, cameraHost, profilesPanel, category, cameraCategory, profilesCategory
 local leftEdit, rightEdit, targetText, offsetSlider, offsetValue
 local keepCheck, reduceCheck, enableCheck, profileDropdown
 local renameButton, deleteButton
@@ -150,6 +152,65 @@ local function AddLabel(parent, content, x, y, width, font)
     label:SetJustifyH("LEFT")
     label:SetText(content)
     return label
+end
+
+local function CreateAboutPanel()
+    local panel = CreateFrame("Frame", nil, UIParent)
+    local scroll = CreateFrame("ScrollFrame", nil, panel, "ScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT")
+    scroll:SetPoint("BOTTOMRIGHT", -28, 0)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(640, 350)
+    scroll:SetScrollChild(content)
+    scroll:SetScript("OnSizeChanged", function(_, width, height)
+        content:SetWidth(math.max(width - 4, 1))
+        content:SetHeight(math.max(350, height or 1))
+    end)
+
+    local version = C_AddOns.GetAddOnMetadata(addonName, "Version") or "Unknown"
+    AddLabel(content, "Camera Offset — About", 20, -20, 510, "GameFontNormalLarge")
+    AddLabel(content,
+        "Shift your character toward the center of one monitor when the game window spans two monitors. Save camera settings in profiles that each character can select.",
+        20, -56, 510, "GameFontHighlight"):SetHeight(50)
+    AddLabel(content,
+        "Version " .. version .. "\nAuthor    Brandon Blackmoor\nCategory  Camera",
+        20, -126, 510, "GameFontHighlightSmall"):SetHeight(48)
+
+    StaticPopupDialogs["CAMERAOFFSET_COPY_SOURCE"] = {
+        text = "Press Ctrl+C to copy the source URL.",
+        button1 = CLOSE or "Close", hasEditBox = true, maxLetters = 255, editBoxWidth = 340,
+        OnShow = function(self)
+            local edit = self.GetEditBox and self:GetEditBox() or self.editBox
+            edit:SetText(SOURCE_URL)
+            edit:SetFocus()
+            edit:HighlightText()
+        end,
+        EditBoxOnEnterPressed = function(self) self:GetParent():Hide() end,
+        EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+    local sourceLabel = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sourceLabel:SetPoint("TOPLEFT", 20, -181)
+    sourceLabel:SetText("Source    ")
+    local sourceLink = CreateFrame("Button", nil, content)
+    sourceLink:SetPoint("LEFT", sourceLabel, "RIGHT")
+    local sourceText = sourceLink:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sourceText:SetPoint("LEFT")
+    sourceText:SetText(SOURCE_URL)
+    sourceText:SetTextColor(0.35, 0.7, 1, 1)
+    sourceLink:SetSize(sourceText:GetStringWidth(), 16)
+    sourceLink:SetScript("OnEnter", function() sourceText:SetTextColor(0.65, 0.85, 1, 1) end)
+    sourceLink:SetScript("OnLeave", function() sourceText:SetTextColor(0.35, 0.7, 1, 1) end)
+    sourceLink:SetScript("OnClick", function() StaticPopup_Show("CAMERAOFFSET_COPY_SOURCE") end)
+
+    AddLabel(content,
+        "License   GPL-3.0\n\nSlash commands\n" ..
+        "    /cameraoffset — Open this About page.\n" ..
+        "    /cameraoffset camera — Open Camera settings.\n" ..
+        "    /cameraoffset profiles — Open Profiles.\n" ..
+        "    /cameraoffset about — Open this About page.",
+        20, -208, 510, "GameFontHighlightSmall"):SetHeight(130)
+    return panel
 end
 
 local function UpdateTarget()
@@ -436,11 +497,17 @@ local function Initialize()
     RegisterDialogs()
     CreateCameraPanel()
     CreateProfilesPanel()
-    category = Settings.RegisterCanvasLayoutCategory(cameraHost, "Camera Offset")
+    category = Settings.RegisterCanvasLayoutCategory(CreateAboutPanel(), "Camera Offset")
     Settings.RegisterAddOnCategory(category)
-    Settings.RegisterCanvasLayoutSubcategory(category, profilesPanel, "Profiles")
+    cameraCategory = Settings.RegisterCanvasLayoutSubcategory(category, cameraHost, "Camera")
+    profilesCategory = Settings.RegisterCanvasLayoutSubcategory(category, profilesPanel, "Profiles")
     SLASH_CAMERAOFFSET1 = "/cameraoffset"
-    SlashCmdList.CAMERAOFFSET = function() Settings.OpenToCategory(category:GetID()) end
+    SlashCmdList.CAMERAOFFSET = function(message)
+        local command = strtrim(message or ""):lower()
+        local destination = command == "camera" and cameraCategory
+            or command == "profiles" and profilesCategory or category
+        Settings.OpenToCategory(destination:GetID())
+    end
 end
 
 local events = CreateFrame("Frame")
