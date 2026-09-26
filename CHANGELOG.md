@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.17
+
+- Remove the monitor width inputs, estimate button, and related text from Camera settings; move the shoulder offset control up.
+- Remove unused monitor width values from profiles and update the instructions.
+
 ## 1.0.16
 
 - Match the information i to the adjacent button's font and size the circle and clickable area to the rendered text.

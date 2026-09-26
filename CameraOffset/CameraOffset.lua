@@ -3,7 +3,7 @@ local DEFAULT_NAME = "Default"
 local SOURCE_URL = "https://github.com/bblackmoor/CameraOffset"
 local MIN_OFFSET, MAX_OFFSET = -20, 20
 local db, cameraPanel, cameraHost, profilesPanel, category, cameraCategory, profilesCategory
-local leftEdit, rightEdit, targetText, offsetSlider, offsetValue
+local offsetStatus, offsetSlider, offsetValue
 local enableCheck, profileDropdown
 local renameButton, deleteButton
 local refreshing = false
@@ -16,14 +16,13 @@ end
 local function DefaultProfile()
     return {
         offset = tonumber(GameDefault("test_cameraOverShoulder", C_CVar.GetCVar("test_cameraOverShoulder") or "0")) or 0,
-        leftWidth = 0, rightWidth = 0, enabled = false,
+        enabled = false,
     }
 end
 
 local function CopyProfile(source)
     return {
-        offset = source.offset, leftWidth = source.leftWidth, rightWidth = source.rightWidth,
-        enabled = source.enabled,
+        offset = source.offset, enabled = source.enabled,
     }
 end
 
@@ -50,12 +49,6 @@ local function ValidateProfile(saved)
     result.enabled = saved.enabled == true
     if type(saved.offset) == "number" and saved.offset == saved.offset then
         result.offset = math.max(MIN_OFFSET, math.min(MAX_OFFSET, saved.offset))
-    end
-    for _, key in ipairs({ "leftWidth", "rightWidth" }) do
-        local width = saved[key]
-        if type(width) == "number" and width == math.floor(width) and width >= 320 and width <= 16384 then
-            result[key] = width
-        end
     end
     return result
 end
@@ -89,8 +82,7 @@ local function LoadDB()
     elseif type(saved) == "table" and type(saved.offset) == "number" then
         -- Preserve the settings applied by the original version without altering Default.
         db.profiles["Previous Camera Offset"] = ValidateProfile({
-            offset = saved.offset, leftWidth = saved.leftWidth,
-            rightWidth = saved.rightWidth, enabled = true,
+            offset = saved.offset, enabled = true,
         })
         db.profileKeys[CharacterKey()] = "Previous Camera Offset"
         db.fallbackProfile = "Previous Camera Offset"
@@ -252,27 +244,17 @@ local function CreateAboutPanel()
     return panel
 end
 
-local function UpdateTarget(message)
-    local profile = Profile()
-    local detail
-    if profile.leftWidth > 0 and profile.rightWidth > 0 then
-        detail = string.format("Left monitor center: %.1f%% across the full window",
-            50 * profile.leftWidth / (profile.leftWidth + profile.rightWidth))
-    else
-        detail = "Enter both monitor widths to estimate a starting offset."
-    end
-    targetText:SetText(message and (message .. "\n" .. detail) or detail)
+local function ShowStatus(message)
+    offsetStatus:SetText(message or "")
 end
 
 local function RefreshCamera()
     refreshing = true
     local profile = Profile()
-    leftEdit:SetText(profile.leftWidth > 0 and tostring(profile.leftWidth) or "")
-    rightEdit:SetText(profile.rightWidth > 0 and tostring(profile.rightWidth) or "")
     enableCheck:SetChecked(profile.enabled)
     offsetSlider:SetValue(profile.offset)
     offsetValue:SetText(string.format("%.1f", profile.offset))
-    UpdateTarget()
+    ShowStatus()
     refreshing = false
 end
 
@@ -291,7 +273,7 @@ local function ResetCameraDefaults()
     db.originalsByCharacter[CharacterKey()] = nil
     for key, cvar in pairs(CVARS) do C_CVar.SetCVar(cvar, defaults[key]) end
     RefreshCamera()
-    UpdateTarget("Camera restored to WoW defaults; Camera Offset disabled.")
+    ShowStatus("Camera restored to WoW defaults; Camera Offset disabled.")
 end
 
 local function ProfileNames()
@@ -435,7 +417,7 @@ local function CreateProfilesPanel()
     profilesPanel = CreateFrame("Frame", nil, UIParent)
     AddLabel(profilesPanel, "Profiles", 20, -20, 420, "GameFontNormalLarge")
     local info = AddLabel(profilesPanel,
-        "Profiles contain the enable switch, shoulder offset, and both monitor widths. They are shared account-wide; each character remembers its selected profile.",
+        "Profiles contain the enable switch and shoulder offset. They are shared account-wide; each character remembers its selected profile.",
         20, -55, 510, "GameFontHighlight")
     info:SetHeight(55)
     AddLabel(profilesPanel, "Selected profile", 20, -127, 250)
@@ -469,59 +451,17 @@ local function CreateProfilesPanel()
     RefreshProfiles()
 end
 
-local function SaveWidths()
-    local left, right = tonumber(leftEdit:GetText()), tonumber(rightEdit:GetText())
-    if not left or not right or left ~= math.floor(left) or right ~= math.floor(right)
-        or left < 320 or right < 320 or left > 16384 or right > 16384 then
-        UpdateTarget("Enter both widths as whole numbers from 320 to 16384 px.")
-        return false
-    end
-    local profile = Profile()
-    profile.leftWidth, profile.rightWidth = left, right
-    UpdateTarget(string.format("Saved widths: %d x %d px.", left, right))
-    return true
-end
-
-local function SaveWidth(edit, key, label)
-    local text = edit:GetText()
-    local value = tonumber(text)
-    if text ~= "" and (not value or value ~= math.floor(value) or value < 320 or value > 16384) then
-        UpdateTarget(label .. " must be a whole number from 320 to 16384 px.")
-        return
-    end
-    Profile()[key] = value or 0
-    UpdateTarget(label .. (value and string.format(" saved: %d px.", value) or " cleared."))
-end
-
-local function AddWidthBox(label, x, key)
-    AddLabel(cameraPanel, label, x, -157, 185)
-    local edit = CreateFrame("EditBox", nil, cameraPanel, "InputBoxTemplate")
-    edit:SetSize(125, 24)
-    edit:SetPoint("TOPLEFT", x, -180)
-    edit:SetAutoFocus(false)
-    edit:SetNumeric(true)
-    edit:SetMaxLetters(5)
-    edit:SetScript("OnEditFocusLost", function(self) SaveWidth(self, key, label) end)
-    edit:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-    edit:SetScript("OnEscapePressed", function(self)
-        local saved = Profile()[key]
-        self:SetText(saved > 0 and tostring(saved) or "")
-        self:ClearFocus()
-    end)
-    return edit
-end
-
 local function CreateCameraPanel()
     cameraHost = CreateFrame("Frame", nil, UIParent)
     local scroll = CreateFrame("ScrollFrame", nil, cameraHost, "ScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -28, 0)
     cameraPanel = CreateFrame("Frame", nil, scroll)
-    cameraPanel:SetSize(640, 510)
+    cameraPanel:SetSize(640, 330)
     scroll:SetScrollChild(cameraPanel)
     scroll:SetScript("OnSizeChanged", function(self, width, height)
         cameraPanel:SetWidth(math.max(width - 4, 1))
-        cameraPanel:SetHeight(math.max(510, height or 1))
+        cameraPanel:SetHeight(math.max(330, height or 1))
     end)
     AddLabel(cameraPanel, "Camera settings", 20, -20, 420, "GameFontNormalLarge")
     local intro = AddLabel(cameraPanel,
@@ -531,33 +471,16 @@ local function CreateCameraPanel()
     enableCheck = AddSwitch(cameraPanel, "Enable Camera Offset", -101, function(checked)
         Profile().enabled = checked
         local applied = ApplyProfile()
-        UpdateTarget(checked and (applied and "Camera Offset enabled and applied to WoW."
+        ShowStatus(checked and (applied and "Camera Offset enabled and applied to WoW."
             or "Camera Offset enabled, but WoW did not accept the offset.")
             or "Camera Offset disabled; previous camera values restored.")
     end)
     local resetButton = AddButton(cameraPanel, "Reset camera defaults", 226, -104, 178,
         ResetCameraDefaults)
     AddInfoLink(cameraPanel, resetButton, "CAMERAOFFSET_ENABLE_INFO")
-    leftEdit = AddWidthBox("Left monitor width (px)", 20, "leftWidth")
-    rightEdit = AddWidthBox("Right monitor width (px)", 230, "rightWidth")
-    targetText = AddLabel(cameraPanel, "", 20, -216, 510, "GameFontHighlightSmall")
-    targetText:SetHeight(42)
-    AddButton(cameraPanel, "Try estimated offset", 20, -268, 176, function()
-        if SaveWidths() then
-            local profile = Profile()
-            local estimate = 6 * profile.rightWidth / (profile.leftWidth + profile.rightWidth)
-            profile.offset = math.floor(estimate * 10 + 0.5) / 10
-            offsetSlider:SetValue(profile.offset)
-            offsetValue:SetText(string.format("%.1f", profile.offset))
-            local applied = ApplyProfile()
-            UpdateTarget(string.format("Estimated offset %.1f %s", profile.offset,
-                not profile.enabled and "saved; enable Camera Offset to apply it."
-                or applied and "applied to WoW." or "saved, but WoW did not accept the offset."))
-        end
-    end)
-    AddLabel(cameraPanel, "Camera shoulder offset", 20, -318, 300)
+    AddLabel(cameraPanel, "Camera shoulder offset", 20, -155, 300)
     offsetSlider = CreateFrame("Slider", "CameraOffsetSlider", cameraPanel, "OptionsSliderTemplate")
-    offsetSlider:SetPoint("TOPLEFT", 26, -353)
+    offsetSlider:SetPoint("TOPLEFT", 26, -190)
     offsetSlider:SetWidth(360)
     offsetSlider:SetMinMaxValues(MIN_OFFSET, MAX_OFFSET)
     offsetSlider:SetValueStep(0.1)
@@ -565,20 +488,22 @@ local function CreateCameraPanel()
     _G[offsetSlider:GetName() .. "Low"]:SetText(tostring(MIN_OFFSET))
     _G[offsetSlider:GetName() .. "High"]:SetText(tostring(MAX_OFFSET))
     _G[offsetSlider:GetName() .. "Text"]:SetText("")
-    offsetValue = AddLabel(cameraPanel, "", 400, -353, 100)
+    offsetValue = AddLabel(cameraPanel, "", 400, -190, 100)
+    offsetStatus = AddLabel(cameraPanel, "", 20, -235, 510, "GameFontHighlightSmall")
+    offsetStatus:SetHeight(26)
     offsetSlider:SetScript("OnValueChanged", function(_, value)
         if refreshing then return end
         local rounded = math.floor(value * 10 + 0.5) / 10
         Profile().offset = rounded
         offsetValue:SetText(string.format("%.1f", rounded))
         local applied = ApplyProfile()
-        UpdateTarget(string.format("Offset %.1f %s", rounded,
+        ShowStatus(string.format("Offset %.1f %s", rounded,
             not Profile().enabled and "saved; enable Camera Offset to apply it."
             or applied and "applied to WoW." or "saved, but WoW did not accept the offset."))
     end)
     AddLabel(cameraPanel,
-        "The width estimate is only a starting point. Adjust the slider by eye; zoom and mounts can change the apparent alignment.",
-        20, -413, 510, "GameFontHighlightSmall"):SetHeight(55)
+        "Adjust the slider by eye; zoom and mounts can change the apparent alignment.",
+        20, -274, 510, "GameFontHighlightSmall"):SetHeight(36)
     cameraPanel:SetScript("OnShow", RefreshCamera)
     RefreshCamera()
 end
