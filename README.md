@@ -6,7 +6,7 @@ When the selected profile is enabled, it applies:
 
 ```text
 /console CameraKeepCharacterCentered 0
-/console CameraReduceUnexpectedMovement 0
+/console CameraReduceUnexpectedMovement 1
 /console test_cameraOverShoulder <your saved offset>
 ```
 
@@ -14,7 +14,7 @@ Open **Options → AddOns → Camera Offset** or type `/cameraoffset` to see the
 
 The **Profiles** tab lets you select, create, copy, rename, and delete profiles. Profiles hold the enable toggle, the three camera values, and both monitor widths. They are shared account-wide, with each character remembering its selection. Default can be edited or restored to WoW's defaults, but cannot be renamed or deleted. Existing installations get a selected **Previous Camera Offset** profile containing their earlier settings; disabling it restores WoW's default values because the earlier version did not record the original camera values.
 
-Enter the pixel widths of your left and right monitors and choose **Try estimated offset** for a starting point, then fine tune with the slider. The selected profile saves your changes. Monitor widths alone cannot determine the exact CVar value; camera zoom, model, and mounts can affect how it looks.
+Enter the pixel widths of your left and right monitors. Each field saves when you press Enter or leave it, and the page confirms the saved value. Choose **Try estimated offset** for a starting point; the page shows the saved estimate and whether it was applied to the camera. Fine tune with the slider. Monitor widths alone cannot determine the exact CVar value; camera zoom, model, and mounts can affect how it looks.
 
 This addon does not change WoW's display mode or resize its window. Continue using your window manager for that.
 

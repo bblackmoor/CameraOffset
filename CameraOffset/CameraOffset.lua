@@ -251,14 +251,16 @@ local function CreateAboutPanel()
     return panel
 end
 
-local function UpdateTarget()
+local function UpdateTarget(message)
     local profile = Profile()
+    local detail
     if profile.leftWidth > 0 and profile.rightWidth > 0 then
-        targetText:SetText(string.format("Left monitor center: %.1f%% across the full window",
-            50 * profile.leftWidth / (profile.leftWidth + profile.rightWidth)))
+        detail = string.format("Left monitor center: %.1f%% across the full window",
+            50 * profile.leftWidth / (profile.leftWidth + profile.rightWidth))
     else
-        targetText:SetText("Enter both monitor widths to estimate a starting offset.")
+        detail = "Enter both monitor widths to estimate a starting offset."
     end
+    targetText:SetText(message and (message .. "\n" .. detail) or detail)
 end
 
 local function RefreshCamera()
@@ -431,18 +433,27 @@ local function SaveWidths()
     local left, right = tonumber(leftEdit:GetText()), tonumber(rightEdit:GetText())
     if not left or not right or left ~= math.floor(left) or right ~= math.floor(right)
         or left < 320 or right < 320 or left > 16384 or right > 16384 then
-        print("|cffffaa00Camera Offset:|r Enter whole-number widths from 320 to 16384 pixels.")
+        UpdateTarget("Enter both widths as whole numbers from 320 to 16384 px.")
         return false
     end
     local profile = Profile()
     profile.leftWidth, profile.rightWidth = left, right
-    leftEdit:ClearFocus()
-    rightEdit:ClearFocus()
-    UpdateTarget()
+    UpdateTarget(string.format("Saved widths: %d x %d px.", left, right))
     return true
 end
 
-local function AddWidthBox(label, x)
+local function SaveWidth(edit, key, label)
+    local text = edit:GetText()
+    local value = tonumber(text)
+    if text ~= "" and (not value or value ~= math.floor(value) or value < 320 or value > 16384) then
+        UpdateTarget(label .. " must be a whole number from 320 to 16384 px.")
+        return
+    end
+    Profile()[key] = value or 0
+    UpdateTarget(label .. (value and string.format(" saved: %d px.", value) or " cleared."))
+end
+
+local function AddWidthBox(label, x, key)
     AddLabel(cameraPanel, label, x, -262, 185)
     local edit = CreateFrame("EditBox", nil, cameraPanel, "InputBoxTemplate")
     edit:SetSize(125, 24)
@@ -450,8 +461,13 @@ local function AddWidthBox(label, x)
     edit:SetAutoFocus(false)
     edit:SetNumeric(true)
     edit:SetMaxLetters(5)
-    edit:SetScript("OnEnterPressed", SaveWidths)
-    edit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    edit:SetScript("OnEditFocusLost", function(self) SaveWidth(self, key, label) end)
+    edit:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    edit:SetScript("OnEscapePressed", function(self)
+        local saved = Profile()[key]
+        self:SetText(saved > 0 and tostring(saved) or "")
+        self:ClearFocus()
+    end)
     return edit
 end
 
@@ -468,11 +484,11 @@ local function CreateCameraPanel()
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -28, 0)
     cameraPanel = CreateFrame("Frame", nil, scroll)
-    cameraPanel:SetSize(640, 620)
+    cameraPanel:SetSize(640, 650)
     scroll:SetScrollChild(cameraPanel)
     scroll:SetScript("OnSizeChanged", function(self, width, height)
         cameraPanel:SetWidth(math.max(width - 4, 1))
-        cameraPanel:SetHeight(math.max(620, height or 1))
+        cameraPanel:SetHeight(math.max(650, height or 1))
     end)
     AddLabel(cameraPanel, "Camera settings", 20, -20, 420, "GameFontNormalLarge")
     local intro = AddLabel(cameraPanel,
@@ -492,19 +508,26 @@ local function CreateCameraPanel()
     end)
     keepCheck = AddCVarCheck("Keep character centered (WoW camera setting)", -140, "keepCentered")
     reduceCheck = AddCVarCheck("Reduce unexpected camera movement (WoW camera setting)", -176, "reduceMovement")
-    leftEdit = AddWidthBox("Left monitor width (px)", 20)
-    rightEdit = AddWidthBox("Right monitor width (px)", 230)
+    leftEdit = AddWidthBox("Left monitor width (px)", 20, "leftWidth")
+    rightEdit = AddWidthBox("Right monitor width (px)", 230, "rightWidth")
     AddButton(cameraPanel, "Save widths", 20, -325, 120, SaveWidths)
     targetText = AddLabel(cameraPanel, "", 20, -365, 510, "GameFontHighlightSmall")
-    AddButton(cameraPanel, "Try estimated offset", 20, -401, 176, function()
+    targetText:SetHeight(42)
+    AddButton(cameraPanel, "Try estimated offset", 20, -416, 176, function()
         if SaveWidths() then
             local profile = Profile()
-            offsetSlider:SetValue(6 * profile.rightWidth / (profile.leftWidth + profile.rightWidth))
+            local estimate = 6 * profile.rightWidth / (profile.leftWidth + profile.rightWidth)
+            profile.offset = math.floor(estimate * 10 + 0.5) / 10
+            offsetSlider:SetValue(profile.offset)
+            offsetValue:SetText(string.format("%.1f", profile.offset))
+            ApplyProfile()
+            UpdateTarget(string.format("Estimated offset %.1f %s", profile.offset,
+                profile.enabled and "applied." or "saved; enable Camera Offset to apply it."))
         end
     end)
-    AddLabel(cameraPanel, "Camera shoulder offset", 20, -454, 300)
+    AddLabel(cameraPanel, "Camera shoulder offset", 20, -465, 300)
     offsetSlider = CreateFrame("Slider", "CameraOffsetSlider", cameraPanel, "OptionsSliderTemplate")
-    offsetSlider:SetPoint("TOPLEFT", 26, -490)
+    offsetSlider:SetPoint("TOPLEFT", 26, -500)
     offsetSlider:SetWidth(360)
     offsetSlider:SetMinMaxValues(MIN_OFFSET, MAX_OFFSET)
     offsetSlider:SetValueStep(0.1)
@@ -512,7 +535,7 @@ local function CreateCameraPanel()
     _G[offsetSlider:GetName() .. "Low"]:SetText(tostring(MIN_OFFSET))
     _G[offsetSlider:GetName() .. "High"]:SetText(tostring(MAX_OFFSET))
     _G[offsetSlider:GetName() .. "Text"]:SetText("")
-    offsetValue = AddLabel(cameraPanel, "", 400, -490, 100)
+    offsetValue = AddLabel(cameraPanel, "", 400, -500, 100)
     offsetSlider:SetScript("OnValueChanged", function(_, value)
         if refreshing then return end
         local rounded = math.floor(value * 10 + 0.5) / 10
@@ -522,7 +545,7 @@ local function CreateCameraPanel()
     end)
     AddLabel(cameraPanel,
         "The width estimate is only a starting point. Adjust the slider by eye; zoom and mounts can change the apparent alignment.",
-        20, -550, 510, "GameFontHighlightSmall"):SetHeight(55)
+        20, -560, 510, "GameFontHighlightSmall"):SetHeight(55)
     cameraPanel:SetScript("OnShow", RefreshCamera)
     RefreshCamera()
 end

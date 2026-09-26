@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.10
+
+- Save each monitor width on Enter or when its field loses focus, with visible confirmation.
+- Show confirmation and the resulting value when applying an estimated offset, including when the addon is disabled.
+
 ## 1.0.9
 
 - Match the requested settings switch layout: label on the left, rectangular track on the right, and a thumb that moves right for On.
