@@ -34,4 +34,13 @@ git config core.hooksPath .githooks
 
 Push a matching `v<version>` tag to publish a permanent release ZIP. The GitHub workflow checks that the tag matches the TOC version.
 
-Licensed under GPL-3.0. See [LICENSE](LICENSE).
+---
+
+**AI Disclaimer:** AI-assisted tools were used during the development of this project. The author reviewed and approved the resulting code and documentation and remains responsible for the project.
+
+Copyright © 2026 Brandon Blackmoor (<bblackmoor@blackgate.net>)  
+Licensed under the GNU General Public License v3.0 (GPL-3.0):  
+https://www.gnu.org/licenses/gpl-3.0.en.html  
+Release history: [CHANGELOG.md](CHANGELOG.md)  
+Source: https://github.com/bblackmoor/CameraOffset
+
