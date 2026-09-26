@@ -415,16 +415,15 @@ end
 
 local function AddInfoLink(parent, anchor, dialog)
     local link = CreateFrame("Frame", nil, parent)
-    link:SetSize(24, 24)
     link:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
     local circle = link:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     circle:SetPoint("CENTER")
-    circle:SetScale(1.3)
     circle:SetText("O")
-    local letter = link:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local letter = link:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     letter:SetPoint("CENTER")
-    letter:SetScale(1.3)
     letter:SetText("i")
+    link:SetSize(math.ceil(math.max(circle:GetStringWidth(), letter:GetStringWidth()) + 6),
+        math.ceil(math.max(circle:GetStringHeight(), letter:GetStringHeight()) + 4))
     link:EnableMouse(true)
     link:SetScript("OnMouseUp", function(_, mouseButton)
         if mouseButton == "LeftButton" then StaticPopup_Show(dialog) end
