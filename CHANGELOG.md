@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.15
+
+- Increase the circled information link's clickable area to 24 x 24 UI units and enlarge its text.
+
 ## 1.0.14
 
 - Draw the clickable circled information symbol as yellow text, without a button texture.
