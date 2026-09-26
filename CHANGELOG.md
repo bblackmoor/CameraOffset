@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.12
+
+- Move the enable switch beside its label and the info button after the switch; tighten Profiles spacing and remove Save widths.
+- Turn reduced camera movement off while enabled so WoW's shoulder offset can take effect.
+- Show the result when enabling, estimating, or adjusting the offset slider, including if WoW does not accept the value.
+
 ## 1.0.11
 
 - Use one enable switch; automatically set the two supporting WoW camera CVars and restore their previous values on disable.

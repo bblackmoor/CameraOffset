@@ -129,7 +129,7 @@ local function ApplyProfile()
     local profile = Profile()
     if not profile.enabled then
         RestoreCamera()
-        return
+        return false
     end
     local character = CharacterKey()
     if not db.originalsByCharacter[character] then
@@ -140,8 +140,10 @@ local function ApplyProfile()
         db.originalsByCharacter[character] = originals
     end
     C_CVar.SetCVar("CameraKeepCharacterCentered", "0")
-    C_CVar.SetCVar("CameraReduceUnexpectedMovement", "1")
+    C_CVar.SetCVar("CameraReduceUnexpectedMovement", "0")
     C_CVar.SetCVar("test_cameraOverShoulder", tostring(profile.offset))
+    local applied = tonumber(C_CVar.GetCVar("test_cameraOverShoulder"))
+    return applied and math.abs(applied - profile.offset) < 0.051
 end
 
 local function AddLabel(parent, content, x, y, width, font)
@@ -156,8 +158,8 @@ end
 local function AddSwitch(parent, label, y, onChanged)
     local switch = CreateFrame("Button", nil, parent)
     switch:SetSize(44, 20)
-    switch:SetPoint("TOPLEFT", 465, y - 3)
-    switch:SetHitRectInsets(-445, 0, -3, -3)
+    switch:SetPoint("TOPLEFT", 170, y - 3)
+    switch:SetHitRectInsets(-150, 0, -3, -3)
 
     local track = switch:CreateTexture(nil, "BACKGROUND")
     track:SetAllPoints()
@@ -167,7 +169,7 @@ local function AddSwitch(parent, label, y, onChanged)
     thumb:SetColorTexture(0.72, 0.72, 0.73, 1)
     local caption = switch:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     caption:SetPoint("RIGHT", switch, "LEFT", -12, 0)
-    caption:SetWidth(433)
+    caption:SetWidth(138)
     caption:SetJustifyH("LEFT")
     caption:SetText(label)
 
@@ -396,7 +398,7 @@ local function RegisterDialogs()
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
     }
     StaticPopupDialogs["CAMERAOFFSET_ENABLE_INFO"] = {
-        text = "When enabled, Camera Offset turns off 'Keep character centered', turns on 'Reduce unexpected camera movement', and applies the saved shoulder offset. When disabled, it restores all three camera values saved before activation for this character. No UI reload is needed.",
+        text = "When enabled, Camera Offset turns off 'Keep character centered' and 'Reduce unexpected camera movement' so the saved shoulder offset can take effect. When disabled, it restores all three camera values saved before activation for this character. No UI reload is needed.",
         button1 = OKAY or "Okay", timeout = 0, whileDead = true,
         hideOnEscape = true, preferredIndex = 3,
     }
@@ -444,7 +446,7 @@ local function CreateProfilesPanel()
     AddButton(profilesPanel, "Restore Default", 20, -260, 145,
         function() StaticPopup_Show("CAMERAOFFSET_RESTORE_DEFAULT") end)
     AddLabel(profilesPanel, "Default can be edited and restored, but cannot be renamed or deleted. New profiles start with WoW's defaults; Copy starts with the currently selected settings.",
-        20, -310, 510, "GameFontHighlightSmall"):SetHeight(55)
+        20, -292, 510, "GameFontHighlightSmall"):SetHeight(55)
     profilesPanel:SetScript("OnShow", RefreshProfiles)
     RefreshProfiles()
 end
@@ -497,47 +499,50 @@ local function CreateCameraPanel()
     scroll:SetPoint("TOPLEFT")
     scroll:SetPoint("BOTTOMRIGHT", -28, 0)
     cameraPanel = CreateFrame("Frame", nil, scroll)
-    cameraPanel:SetSize(640, 550)
+    cameraPanel:SetSize(640, 510)
     scroll:SetScrollChild(cameraPanel)
     scroll:SetScript("OnSizeChanged", function(self, width, height)
         cameraPanel:SetWidth(math.max(width - 4, 1))
-        cameraPanel:SetHeight(math.max(550, height or 1))
+        cameraPanel:SetHeight(math.max(510, height or 1))
     end)
     AddLabel(cameraPanel, "Camera settings", 20, -20, 420, "GameFontNormalLarge")
     local intro = AddLabel(cameraPanel,
-        "A new install leaves WoW's camera settings alone. Enabling turns centering off and reduced movement on, then applies this profile. Disabling restores your previous camera values without a UI reload.",
+        "A new install leaves WoW's camera settings alone. Enabling turns centering and reduced movement off, then applies this profile. Disabling restores your previous camera values without a UI reload.",
         20, -52, 510, "GameFontHighlight")
     intro:SetHeight(42)
     enableCheck = AddSwitch(cameraPanel, "Enable Camera Offset", -101, function(checked)
         Profile().enabled = checked
-        ApplyProfile()
+        local applied = ApplyProfile()
+        UpdateTarget(checked and (applied and "Camera Offset enabled and applied to WoW."
+            or "Camera Offset enabled, but WoW did not accept the offset.")
+            or "Camera Offset disabled; previous camera values restored.")
     end)
-    local infoButton = AddButton(cameraPanel, "?", 195, -104, 24,
+    local infoButton = AddButton(cameraPanel, "?", 225, -104, 24,
         function() StaticPopup_Show("CAMERAOFFSET_ENABLE_INFO") end)
     infoButton:SetFrameLevel(enableCheck:GetFrameLevel() + 1)
-    local resetButton = AddButton(cameraPanel, "Reset camera defaults", 230, -104, 178,
+    local resetButton = AddButton(cameraPanel, "Reset camera defaults", 262, -104, 178,
         ResetCameraDefaults)
     resetButton:SetFrameLevel(enableCheck:GetFrameLevel() + 1)
     leftEdit = AddWidthBox("Left monitor width (px)", 20, "leftWidth")
     rightEdit = AddWidthBox("Right monitor width (px)", 230, "rightWidth")
-    AddButton(cameraPanel, "Save widths", 20, -220, 120, SaveWidths)
-    targetText = AddLabel(cameraPanel, "", 20, -260, 510, "GameFontHighlightSmall")
+    targetText = AddLabel(cameraPanel, "", 20, -225, 510, "GameFontHighlightSmall")
     targetText:SetHeight(42)
-    AddButton(cameraPanel, "Try estimated offset", 20, -311, 176, function()
+    AddButton(cameraPanel, "Try estimated offset", 20, -275, 176, function()
         if SaveWidths() then
             local profile = Profile()
             local estimate = 6 * profile.rightWidth / (profile.leftWidth + profile.rightWidth)
             profile.offset = math.floor(estimate * 10 + 0.5) / 10
             offsetSlider:SetValue(profile.offset)
             offsetValue:SetText(string.format("%.1f", profile.offset))
-            ApplyProfile()
+            local applied = ApplyProfile()
             UpdateTarget(string.format("Estimated offset %.1f %s", profile.offset,
-                profile.enabled and "applied." or "saved; enable Camera Offset to apply it."))
+                not profile.enabled and "saved; enable Camera Offset to apply it."
+                or applied and "applied to WoW." or "saved, but WoW did not accept the offset."))
         end
     end)
-    AddLabel(cameraPanel, "Camera shoulder offset", 20, -360, 300)
+    AddLabel(cameraPanel, "Camera shoulder offset", 20, -323, 300)
     offsetSlider = CreateFrame("Slider", "CameraOffsetSlider", cameraPanel, "OptionsSliderTemplate")
-    offsetSlider:SetPoint("TOPLEFT", 26, -395)
+    offsetSlider:SetPoint("TOPLEFT", 26, -358)
     offsetSlider:SetWidth(360)
     offsetSlider:SetMinMaxValues(MIN_OFFSET, MAX_OFFSET)
     offsetSlider:SetValueStep(0.1)
@@ -545,17 +550,20 @@ local function CreateCameraPanel()
     _G[offsetSlider:GetName() .. "Low"]:SetText(tostring(MIN_OFFSET))
     _G[offsetSlider:GetName() .. "High"]:SetText(tostring(MAX_OFFSET))
     _G[offsetSlider:GetName() .. "Text"]:SetText("")
-    offsetValue = AddLabel(cameraPanel, "", 400, -395, 100)
+    offsetValue = AddLabel(cameraPanel, "", 400, -358, 100)
     offsetSlider:SetScript("OnValueChanged", function(_, value)
         if refreshing then return end
         local rounded = math.floor(value * 10 + 0.5) / 10
         Profile().offset = rounded
         offsetValue:SetText(string.format("%.1f", rounded))
-        ApplyProfile()
+        local applied = ApplyProfile()
+        UpdateTarget(string.format("Offset %.1f %s", rounded,
+            not Profile().enabled and "saved; enable Camera Offset to apply it."
+            or applied and "applied to WoW." or "saved, but WoW did not accept the offset."))
     end)
     AddLabel(cameraPanel,
         "The width estimate is only a starting point. Adjust the slider by eye; zoom and mounts can change the apparent alignment.",
-        20, -455, 510, "GameFontHighlightSmall"):SetHeight(55)
+        20, -418, 510, "GameFontHighlightSmall"):SetHeight(55)
     cameraPanel:SetScript("OnShow", RefreshCamera)
     RefreshCamera()
 end
