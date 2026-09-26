@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.8
+
+- Use on/off switches for the enable control and both WoW camera settings.
+- Set centering off and reduced movement on when enabling Camera Offset; allow either setting to be adjusted afterward.
+
 ## 1.0.7
 
 - Open the addon settings on an About page with version, author, category, license, source link, and slash-command reference.

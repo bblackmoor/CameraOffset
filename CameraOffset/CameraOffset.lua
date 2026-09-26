@@ -154,6 +154,48 @@ local function AddLabel(parent, content, x, y, width, font)
     return label
 end
 
+local function AddSwitch(parent, label, y, onChanged)
+    local switch = CreateFrame("Button", nil, parent)
+    switch:SetSize(56, 26)
+    switch:SetPoint("TOPLEFT", 20, y)
+    switch:SetHitRectInsets(0, -440, 0, 0)
+
+    local track = switch:CreateTexture(nil, "BACKGROUND")
+    track:SetAllPoints()
+    track:SetTexture("Interface\\AddOns\\CameraOffset\\SwitchTrack.tga")
+    local thumb = switch:CreateTexture(nil, "ARTWORK")
+    thumb:SetSize(20, 20)
+    thumb:SetTexture("Interface\\AddOns\\CameraOffset\\SwitchThumb.tga")
+    local state = switch:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local caption = switch:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    caption:SetPoint("LEFT", switch, "RIGHT", 12, 0)
+    caption:SetText(label)
+
+    function switch:SetChecked(checked)
+        self.checked = checked == true
+        thumb:ClearAllPoints()
+        state:ClearAllPoints()
+        if self.checked then
+            track:SetVertexColor(0.13, 0.55, 0.33)
+            thumb:SetPoint("RIGHT", self, "RIGHT", -3, 0)
+            state:SetPoint("LEFT", self, "LEFT", 6, 0)
+            state:SetText("On")
+        else
+            track:SetVertexColor(0.28, 0.28, 0.30)
+            thumb:SetPoint("LEFT", self, "LEFT", 3, 0)
+            state:SetPoint("RIGHT", self, "RIGHT", -5, 0)
+            state:SetText("Off")
+        end
+    end
+    function switch:GetChecked() return self.checked end
+    switch:SetScript("OnClick", function(self)
+        self:SetChecked(not self:GetChecked())
+        onChanged(self:GetChecked())
+    end)
+    switch:SetChecked(false)
+    return switch
+end
+
 local function CreateAboutPanel()
     local panel = CreateFrame("Frame", nil, UIParent)
     local scroll = CreateFrame("ScrollFrame", nil, panel, "ScrollFrameTemplate")
@@ -418,15 +460,10 @@ local function AddWidthBox(label, x)
 end
 
 local function AddCVarCheck(label, y, key)
-    local check = CreateFrame("CheckButton", nil, cameraPanel, "UICheckButtonTemplate")
-    check:SetPoint("TOPLEFT", 20, y)
-    local text = AddLabel(cameraPanel, label, 50, y - 5, 460, "GameFontHighlight")
-    text:SetHeight(25)
-    check:SetScript("OnClick", function(self)
-        Profile()[key] = self:GetChecked() and "1" or "0"
+    return AddSwitch(cameraPanel, label, y, function(checked)
+        Profile()[key] = checked and "1" or "0"
         ApplyProfile()
     end)
-    return check
 end
 
 local function CreateCameraPanel()
@@ -443,14 +480,18 @@ local function CreateCameraPanel()
     end)
     AddLabel(cameraPanel, "Camera settings", 20, -20, 420, "GameFontNormalLarge")
     local intro = AddLabel(cameraPanel,
-        "A new install leaves WoW's camera settings alone. Enable a profile to apply its settings now and at login. Disabling restores your previous camera values without a UI reload.",
+        "A new install leaves WoW's camera settings alone. Enabling turns centering off and reduced movement on, then applies this profile. Disabling restores your previous camera values without a UI reload.",
         20, -52, 510, "GameFontHighlight")
     intro:SetHeight(42)
-    enableCheck = CreateFrame("CheckButton", nil, cameraPanel, "UICheckButtonTemplate")
-    enableCheck:SetPoint("TOPLEFT", 20, -101)
-    AddLabel(cameraPanel, "Enable Camera Offset", 50, -106, 460, "GameFontHighlight")
-    enableCheck:SetScript("OnClick", function(self)
-        Profile().enabled = self:GetChecked() == true
+    enableCheck = AddSwitch(cameraPanel, "Enable Camera Offset", -101, function(checked)
+        local profile = Profile()
+        profile.enabled = checked
+        if checked then
+            profile.keepCentered = "0"
+            profile.reduceMovement = "1"
+            keepCheck:SetChecked(false)
+            reduceCheck:SetChecked(true)
+        end
         ApplyProfile()
     end)
     keepCheck = AddCVarCheck("Keep character centered (WoW camera setting)", -140, "keepCentered")
