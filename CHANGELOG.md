@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.13
+
+- Put controls and actions in label, control, reset, info order with a consistent gap.
+- Use WoW's gold circled information icon instead of a question-mark button.
+- Align monitor width fields with their labels and move Restore Default beside the profile selector.
+
 ## 1.0.12
 
 - Move the enable switch beside its label and the info button after the switch; tighten Profiles spacing and remove Save widths.

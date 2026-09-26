@@ -413,6 +413,14 @@ local function AddButton(parent, label, x, y, width, callback)
     return button
 end
 
+local function AddInfoButton(parent, anchor, dialog)
+    local button = CreateFrame("Button", "CameraOffsetEnableInfoButton", parent, "UIPanelInfoButton")
+    button:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
+    button.texture:SetVertexColor(1, 0.82, 0)
+    button:SetScript("OnClick", function() StaticPopup_Show(dialog) end)
+    return button
+end
+
 local function CreateProfilesPanel()
     profilesPanel = CreateFrame("Frame", nil, UIParent)
     AddLabel(profilesPanel, "Profiles", 20, -20, 420, "GameFontNormalLarge")
@@ -434,19 +442,19 @@ local function CreateProfilesPanel()
             UIDropDownMenu_AddButton(item, level)
         end
     end)
+    AddButton(profilesPanel, "Restore Default", 316, -159, 145,
+        function() StaticPopup_Show("CAMERAOFFSET_RESTORE_DEFAULT") end)
+    AddLabel(profilesPanel, "Default can be edited and restored, but cannot be renamed or deleted. New profiles start with WoW's defaults; Copy starts with the currently selected settings.",
+        20, -194, 510, "GameFontHighlightSmall"):SetHeight(48)
     local function NameDialog(action, initial)
         StaticPopup_Show("CAMERAOFFSET_PROFILE_NAME", nil, nil, { action = action, initial = initial })
     end
-    AddButton(profilesPanel, "Create", 20, -215, 88, function() NameDialog("create", "") end)
-    AddButton(profilesPanel, "Copy", 115, -215, 88, function() NameDialog("copy", ProfileName() .. " Copy") end)
-    renameButton = AddButton(profilesPanel, "Rename", 210, -215, 88,
+    AddButton(profilesPanel, "Create", 20, -253, 88, function() NameDialog("create", "") end)
+    AddButton(profilesPanel, "Copy", 115, -253, 88, function() NameDialog("copy", ProfileName() .. " Copy") end)
+    renameButton = AddButton(profilesPanel, "Rename", 210, -253, 88,
         function() NameDialog("rename", ProfileName()) end)
-    deleteButton = AddButton(profilesPanel, "Delete", 305, -215, 88,
+    deleteButton = AddButton(profilesPanel, "Delete", 305, -253, 88,
         function() StaticPopup_Show("CAMERAOFFSET_DELETE_PROFILE", ProfileName()) end)
-    AddButton(profilesPanel, "Restore Default", 20, -260, 145,
-        function() StaticPopup_Show("CAMERAOFFSET_RESTORE_DEFAULT") end)
-    AddLabel(profilesPanel, "Default can be edited and restored, but cannot be renamed or deleted. New profiles start with WoW's defaults; Copy starts with the currently selected settings.",
-        20, -292, 510, "GameFontHighlightSmall"):SetHeight(55)
     profilesPanel:SetScript("OnShow", RefreshProfiles)
     RefreshProfiles()
 end
@@ -479,7 +487,7 @@ local function AddWidthBox(label, x, key)
     AddLabel(cameraPanel, label, x, -157, 185)
     local edit = CreateFrame("EditBox", nil, cameraPanel, "InputBoxTemplate")
     edit:SetSize(125, 24)
-    edit:SetPoint("TOPLEFT", x + 5, -182)
+    edit:SetPoint("TOPLEFT", x, -180)
     edit:SetAutoFocus(false)
     edit:SetNumeric(true)
     edit:SetMaxLetters(5)
@@ -517,17 +525,14 @@ local function CreateCameraPanel()
             or "Camera Offset enabled, but WoW did not accept the offset.")
             or "Camera Offset disabled; previous camera values restored.")
     end)
-    local infoButton = AddButton(cameraPanel, "?", 225, -104, 24,
-        function() StaticPopup_Show("CAMERAOFFSET_ENABLE_INFO") end)
-    infoButton:SetFrameLevel(enableCheck:GetFrameLevel() + 1)
-    local resetButton = AddButton(cameraPanel, "Reset camera defaults", 262, -104, 178,
+    local resetButton = AddButton(cameraPanel, "Reset camera defaults", 226, -104, 178,
         ResetCameraDefaults)
-    resetButton:SetFrameLevel(enableCheck:GetFrameLevel() + 1)
+    AddInfoButton(cameraPanel, resetButton, "CAMERAOFFSET_ENABLE_INFO")
     leftEdit = AddWidthBox("Left monitor width (px)", 20, "leftWidth")
     rightEdit = AddWidthBox("Right monitor width (px)", 230, "rightWidth")
-    targetText = AddLabel(cameraPanel, "", 20, -225, 510, "GameFontHighlightSmall")
+    targetText = AddLabel(cameraPanel, "", 20, -216, 510, "GameFontHighlightSmall")
     targetText:SetHeight(42)
-    AddButton(cameraPanel, "Try estimated offset", 20, -275, 176, function()
+    AddButton(cameraPanel, "Try estimated offset", 20, -268, 176, function()
         if SaveWidths() then
             local profile = Profile()
             local estimate = 6 * profile.rightWidth / (profile.leftWidth + profile.rightWidth)
@@ -540,9 +545,9 @@ local function CreateCameraPanel()
                 or applied and "applied to WoW." or "saved, but WoW did not accept the offset."))
         end
     end)
-    AddLabel(cameraPanel, "Camera shoulder offset", 20, -323, 300)
+    AddLabel(cameraPanel, "Camera shoulder offset", 20, -318, 300)
     offsetSlider = CreateFrame("Slider", "CameraOffsetSlider", cameraPanel, "OptionsSliderTemplate")
-    offsetSlider:SetPoint("TOPLEFT", 26, -358)
+    offsetSlider:SetPoint("TOPLEFT", 26, -353)
     offsetSlider:SetWidth(360)
     offsetSlider:SetMinMaxValues(MIN_OFFSET, MAX_OFFSET)
     offsetSlider:SetValueStep(0.1)
@@ -550,7 +555,7 @@ local function CreateCameraPanel()
     _G[offsetSlider:GetName() .. "Low"]:SetText(tostring(MIN_OFFSET))
     _G[offsetSlider:GetName() .. "High"]:SetText(tostring(MAX_OFFSET))
     _G[offsetSlider:GetName() .. "Text"]:SetText("")
-    offsetValue = AddLabel(cameraPanel, "", 400, -358, 100)
+    offsetValue = AddLabel(cameraPanel, "", 400, -353, 100)
     offsetSlider:SetScript("OnValueChanged", function(_, value)
         if refreshing then return end
         local rounded = math.floor(value * 10 + 0.5) / 10
@@ -563,7 +568,7 @@ local function CreateCameraPanel()
     end)
     AddLabel(cameraPanel,
         "The width estimate is only a starting point. Adjust the slider by eye; zoom and mounts can change the apparent alignment.",
-        20, -418, 510, "GameFontHighlightSmall"):SetHeight(55)
+        20, -413, 510, "GameFontHighlightSmall"):SetHeight(55)
     cameraPanel:SetScript("OnShow", RefreshCamera)
     RefreshCamera()
 end
