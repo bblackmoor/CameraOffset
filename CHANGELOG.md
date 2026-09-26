@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.14
+
+- Draw the clickable circled information symbol as yellow text, without a button texture.
+
 ## 1.0.13
 
 - Put controls and actions in label, control, reset, info order with a consistent gap.

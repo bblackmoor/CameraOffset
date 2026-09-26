@@ -413,12 +413,21 @@ local function AddButton(parent, label, x, y, width, callback)
     return button
 end
 
-local function AddInfoButton(parent, anchor, dialog)
-    local button = CreateFrame("Button", "CameraOffsetEnableInfoButton", parent, "UIPanelInfoButton")
-    button:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
-    button.texture:SetVertexColor(1, 0.82, 0)
-    button:SetScript("OnClick", function() StaticPopup_Show(dialog) end)
-    return button
+local function AddInfoLink(parent, anchor, dialog)
+    local link = CreateFrame("Frame", nil, parent)
+    link:SetSize(18, 18)
+    link:SetPoint("LEFT", anchor, "RIGHT", 12, 0)
+    local circle = link:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    circle:SetPoint("CENTER")
+    circle:SetText("O")
+    local letter = link:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    letter:SetPoint("CENTER")
+    letter:SetText("i")
+    link:EnableMouse(true)
+    link:SetScript("OnMouseUp", function(_, mouseButton)
+        if mouseButton == "LeftButton" then StaticPopup_Show(dialog) end
+    end)
+    return link
 end
 
 local function CreateProfilesPanel()
@@ -527,7 +536,7 @@ local function CreateCameraPanel()
     end)
     local resetButton = AddButton(cameraPanel, "Reset camera defaults", 226, -104, 178,
         ResetCameraDefaults)
-    AddInfoButton(cameraPanel, resetButton, "CAMERAOFFSET_ENABLE_INFO")
+    AddInfoLink(cameraPanel, resetButton, "CAMERAOFFSET_ENABLE_INFO")
     leftEdit = AddWidthBox("Left monitor width (px)", 20, "leftWidth")
     rightEdit = AddWidthBox("Right monitor width (px)", 230, "rightWidth")
     targetText = AddLabel(cameraPanel, "", 20, -216, 510, "GameFontHighlightSmall")
